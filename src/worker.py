@@ -20,8 +20,9 @@ class Worker:
                 self._video = self._video_queue[0]  # Peek at the first video in the queue
                 if not self._video.mark_frame_as_processing():
                     self._video_queue.popleft()
+                    self._video = None
                     continue
-                break
+                else:
+                    return True
 
-            return True
         return False

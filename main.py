@@ -6,23 +6,18 @@ import json
 with open('ExampleTraffic.json') as f:
     traffic_json = json.load(f)
 
-# def data(time, dur):
-#     return {'properties': {'time': time, 'Duration': dur}}
-# traffic_json = []
-# for i in range(10,-1,-1):
-#     seconds = 120
-#     traffic_json.append(data(i*seconds, 10))
-
 initial_video_timestamp = traffic_json[-1]['properties']['time']
 traffic = [Video(data, initial_video_timestamp) for data in traffic_json]
 
 del traffic_json # Free memory as we don't need it anymore
 
 # Simulation
-from src.simulation import Simulaion
-simulation = Simulaion(traffic, LoadBalancer)
+from src.simulation import Simulation
+simulation = Simulation(traffic, LoadBalancer)
 queue_sizes, worker_counts = simulation.simulate_traffic()
 
+print("Average VRT: %s" % simulation.average_vrt)
+print("WMU: %s" % simulation.total_worker_usage_time)
 
 # Plot Graphs
 import matplotlib.pyplot as plt

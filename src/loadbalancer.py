@@ -1,15 +1,15 @@
 from .worker import Worker
-
+from typing import List
 
 class LoadBalancer:
 
-    def __init__(self, video_queue):
-        self.W = [0] * 5
-        self.queue_size = 0
-        self.worker_count: int = 20
+    def __init__(self, video_queue, initial_worker_count):
+        self.W = [0.0] * 5
+        self.queue_size: int = 0
+        self.worker_count: int = initial_worker_count
 
-        self.worker_counts = []
-        self.queue_sizes = []
+        self.worker_counts: List[int] = []
+        self.queue_sizes: List[int] = []
 
         self.video_queue = video_queue
 
