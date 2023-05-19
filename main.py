@@ -1,19 +1,13 @@
-from src.video import Video
 from src.loadbalancer import LoadBalancer
+from src.simulation import Simulation
 
 import json
 
 with open('ExampleTraffic.json') as f:
     traffic_json = json.load(f)
 
-initial_video_timestamp = traffic_json[-1]['properties']['time']
-traffic = [Video(data, initial_video_timestamp) for data in traffic_json]
-
-del traffic_json # Free memory as we don't need it anymore
-
 # Simulation
-from src.simulation import Simulation
-simulation = Simulation(traffic, LoadBalancer)
+simulation = Simulation(traffic_json_arr=traffic_json, load_balancer_class=LoadBalancer)
 queue_sizes, worker_counts = simulation.simulate_traffic()
 
 print("Average VRT: %s" % simulation.average_vrt)

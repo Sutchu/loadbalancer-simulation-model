@@ -37,7 +37,7 @@ class LoadBalancer:
         This function adds new workers to the current worker group.
         """
         for _ in range(self.number_of_workers_to_add):
-            current_worker_group.append(Worker(self.video_queue))
+            current_worker_group.append(Worker())
             self.worker_count += 1
 
         self.number_of_workers_to_add = 0

@@ -1,52 +1,35 @@
-from src.video import Video
-from src.worker import Worker
-
-from collections import deque
 from typing import List
 
-from .errors import TrafficFinishedError
+from .traffic_manager import TrafficManager
+from .worker import Worker
 
 
 class Simulation:
-    def __init__(self, traffic: List[Video], load_balancer_class: type, initial_worker_count=20):
-        self.traffic = traffic
-
-        # Initialize the queue of videos to be processed
-        self.video_queue = deque()
+    def __init__(self, traffic_json_arr: List[dict], load_balancer_class: type, initial_worker_count=20):
+        self.traffic_manager = TrafficManager(traffic_json_arr)
 
         # Initialize the worker pool
         self.worker_indexes = [[] for _ in range(9)]
-        self.worker_indexes[0] = [Worker(self.video_queue) for _ in range(initial_worker_count)]
-
-        # Initialize lists to hold data for graphs
-        self.vrt_arrray = []
+        self.worker_indexes[0] = [Worker() for _ in range(initial_worker_count)]
 
         self.current_simulation_time = 0
 
-        self.load_balancer = load_balancer_class(self.video_queue, initial_worker_count)
-        self.total_worker_usage_time = 0 # WMU (worker machine usage)
-        self.average_vrt = 0 # average VRT (video ready time)
+        self.load_balancer = load_balancer_class(self.traffic_manager.video_queue, initial_worker_count)
+        self.total_worker_usage_time = 0  # WMU (worker machine usage)
+        self.average_vrt = 0  # average VRT (video ready time)
 
-    def update_video_queue_from_traffic(self):
-        try:
-            while self.current_simulation_time >= self.traffic[-1].timestamp:
-                video: Video = self.traffic.pop()
-                self.video_queue.append(video)
-        except IndexError:
-            raise TrafficFinishedError()
-
-    def finish_processing_frames(self, current_worker_group):
+    def finish_processing_frames(self, current_worker_group: List[Worker]):
         for worker in current_worker_group:
             if worker._video:
                 self.total_worker_usage_time += 8
 
-            worker.finish_processing_frame(self.current_simulation_time, self.vrt_arrray)
+            worker.finish_processing_frame(self.current_simulation_time)
 
-    def assign_new_frames_to_available_workers(self, current_worker_group):
+    def assign_new_frames_to_available_workers(self, current_worker_group: List[Worker]) -> int:
         idle_worker_index = len(current_worker_group)
         for index, worker in enumerate(current_worker_group):
             # If there are no more videos to process, break out of the loop
-            if not worker.process_new_frame():
+            if not self.traffic_manager.assign_video_to_worker(worker):
                 idle_worker_index = index
                 break
 
@@ -64,14 +47,10 @@ class Simulation:
         return len(idle_workers)
 
     def simulate_traffic(self):
-        is_traffic_empty = False
         idle_worker_count = 0
 
-        while self.video_queue or not is_traffic_empty:
-            try:
-                self.update_video_queue_from_traffic()
-            except TrafficFinishedError:
-                is_traffic_empty = True
+        while self.traffic_manager.video_queue or not self.traffic_manager.is_traffic_finished:
+            self.traffic_manager.add_videos_to_queue(self.current_simulation_time)
 
             current_worker_group = self.worker_indexes[self.current_simulation_time % 9]
             self.finish_processing_frames(current_worker_group)
@@ -87,6 +66,6 @@ class Simulation:
 
             self.current_simulation_time += 1
 
-        self.average_vrt = sum(self.vrt_arrray) // len(self.vrt_arrray)
+        self.average_vrt = self.traffic_manager.average_video_processing_time
 
         return self.load_balancer.queue_sizes, self.load_balancer.worker_counts
