@@ -1,29 +1,16 @@
 from .worker import Worker
-from typing import List
 
 class LoadBalancer:
 
-    def __init__(self, video_queue, initial_worker_count):
+    def __init__(self, initial_worker_count):
         self.W = [0.0] * 5
-        self.queue_size: int = 0
         self.worker_count: int = initial_worker_count
-
-        self.worker_counts: List[int] = []
-        self.queue_sizes: List[int] = []
-
-        self.video_queue = video_queue
 
         self.number_of_workers_to_remove = 0
         self.number_of_workers_to_add = 0
 
-    def update_graph_arrays(self):
-        self.queue_size = sum(
-            video._unprocessed_frame_count + video._processing_frame_count for video in self.video_queue)
-        self.queue_sizes.append(self.queue_size)
-        self.worker_counts.append(self.worker_count)
-
-    def balance_worker_load(self, current_worker_group_size):
-        self.W.append(self.queue_size / max(1, (self.worker_count - current_worker_group_size)))
+    def balance_worker_load(self, worker_group_size: int, processing_queue_frame_count: int):
+        self.W.append(processing_queue_frame_count / max(1, (self.worker_count - worker_group_size)))
 
         # average of last 5 minutes
         average_w = sum(self.W[-5:]) / 5

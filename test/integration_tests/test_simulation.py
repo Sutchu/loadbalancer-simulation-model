@@ -1,6 +1,7 @@
 from unittest import TestCase
 from test.mocks.mock_loadbalancer import MockLoadBalancer
 from src.simulation import Simulation
+from src.metrics_logger import MetricsLogger
 
 
 def create_video_data(time, duration):
@@ -24,22 +25,26 @@ class TestSimulation(TestCase):
                                 load_balancer_class=MockLoadBalancer,
                                 initial_worker_count=1)
 
-        queue_sizes, worker_counts = simulation.simulate_traffic()
-        self.assertEqual(queue_sizes, [0, 9, 2])
-        self.assertEqual(worker_counts, [1, 1, 1])
-        self.assertEqual(simulation.average_vrt, 16 * 8)  # 16 frames * 8 seconds per frame
-        self.assertEqual(simulation.total_worker_usage_time, 16 * 8 + 1)  # 16 frames * 8 seconds per frame
+        simulation.simulate_traffic()
+        metrics: MetricsLogger = simulation.metrics_logger
+
+        self.assertEqual(metrics.queue_lengths, [0, 9, 2])
+        self.assertEqual(metrics.worker_counts, [1, 1, 1])
+        self.assertEqual(metrics.average_video_ready_time, 16 * 8)  # 16 frames * 8 seconds per frame
+        self.assertEqual(metrics.cumulative_worker_usage_time, 16 * 8 + 1)  # 16 frames * 8 seconds per frame
 
     def test_1_video_2_workers(self):
         simulation = Simulation(traffic_json_arr=self.traffic,
                                 load_balancer_class=MockLoadBalancer,
                                 initial_worker_count=2)
 
-        queue_sizes, worker_counts = simulation.simulate_traffic()
-        self.assertEqual(queue_sizes, [0, 2])
-        self.assertEqual(worker_counts, [2, 2])
-        self.assertEqual(simulation.average_vrt, 16 * 8 / 2)  # 16 frames * 8 seconds per frame
-        self.assertEqual(simulation.total_worker_usage_time, 16 * 8 + 2)  # 16 frames * 8 seconds per frame
+        simulation.simulate_traffic()
+        metrics: MetricsLogger = simulation.metrics_logger
+
+        self.assertEqual(metrics.queue_lengths, [0, 2])
+        self.assertEqual(metrics.worker_counts, [2, 2])
+        self.assertEqual(metrics.average_video_ready_time, 16 * 8 / 2)  # 16 frames * 8 seconds per frame
+        self.assertEqual(metrics.cumulative_worker_usage_time, 16 * 8 + 2)  # 16 frames * 8 seconds per frame
 
     def test_2_video_1_workers(self):
         video_2 = create_video_data(180, 16 / 15)
@@ -49,13 +54,15 @@ class TestSimulation(TestCase):
                                 load_balancer_class=MockLoadBalancer,
                                 initial_worker_count=1)
 
-        queue_sizes, worker_counts = simulation.simulate_traffic()
-        self.assertEqual(queue_sizes, [0, 9, 2, 0, 9, 2])
-        self.assertEqual(worker_counts, [1, 1, 1, 1, 1, 1])
-        self.assertEqual(simulation.average_vrt, 16 * 8)  # 16 frames * 8 seconds per frame
+        simulation.simulate_traffic()
+        metrics: MetricsLogger = simulation.metrics_logger
+
+        self.assertEqual(metrics.queue_lengths, [0, 9, 2, 0, 9, 2])
+        self.assertEqual(metrics.worker_counts, [1, 1, 1, 1, 1, 1])
+        self.assertEqual(metrics.average_video_ready_time, 16 * 8)  # 16 frames * 8 seconds per frame
 
         expected_wmu = 16 * 8 * 2 + (181 - 129) + 1
-        self.assertEqual(simulation.total_worker_usage_time, expected_wmu)
+        self.assertEqual(metrics.cumulative_worker_usage_time, expected_wmu)
 
     def test_2_video_2_workers(self):
         video_2 = create_video_data(180, 16 / 15)
@@ -65,10 +72,12 @@ class TestSimulation(TestCase):
                                 load_balancer_class=MockLoadBalancer,
                                 initial_worker_count=2)
 
-        queue_sizes, worker_counts = simulation.simulate_traffic()
-        self.assertEqual(queue_sizes, [0, 2, 0, 0, 2])
-        self.assertEqual(worker_counts, [2, 2, 2, 2, 2])
-        self.assertEqual(simulation.average_vrt, 16 * 8 / 2)
+        simulation.simulate_traffic()
+        metrics: MetricsLogger = simulation.metrics_logger
+
+        self.assertEqual(metrics.queue_lengths, [0, 2, 0, 0, 2])
+        self.assertEqual(metrics.worker_counts, [2, 2, 2, 2, 2])
+        self.assertEqual(metrics.average_video_ready_time, 16 * 8 / 2)
 
         expected_wmu = 16 * 8 * 2 + ((181 - 65) + 1) * 2
-        self.assertEqual(simulation.total_worker_usage_time, expected_wmu)
+        self.assertEqual(metrics.cumulative_worker_usage_time, expected_wmu)

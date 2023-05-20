@@ -1,9 +1,8 @@
 from typing import Callable
 
-
 class Video:
     def __init__(self, video_json, initial_video_timestamp, on_fully_processed: Callable):
-        self.on_fully_processed = on_fully_processed
+        self._on_fully_processed = on_fully_processed
         # Timestamp in seconds starting from 0 to simplify calculations
         self.timestamp = int(video_json['properties']['time'] - initial_video_timestamp) + 1
 
@@ -12,10 +11,10 @@ class Video:
         self._processed_frame_count = 0
 
         # VRT, time it took to process this video. Calculation is finished when self.frames is 0
-        self.video_ready_time = 0
+        self._video_ready_time = 0
 
-    def calculate_video_ready_time(self, finished_time):
-        self.video_ready_time = finished_time - self.timestamp
+    def _calculate_video_ready_time(self, finished_time):
+        self._video_ready_time = finished_time - self.timestamp
 
     def mark_frame_as_processing(self) -> bool:
         if self._unprocessed_frame_count == 0:
@@ -29,14 +28,18 @@ class Video:
         self._processing_frame_count -= 1
         self._processed_frame_count += 1
 
-        if self.is_fully_processed:
-            self.calculate_video_ready_time(current_simulation_time)
-            self.on_fully_processed(self)
+        if self._is_fully_processed:
+            self._calculate_video_ready_time(current_simulation_time)
+            self._on_fully_processed(self)
 
     @property
-    def is_fully_processed(self):
+    def _is_fully_processed(self):
         return self._unprocessed_frame_count == 0 and self._processing_frame_count == 0
 
     @property
     def has_unprocessed_frames(self):
         return self._unprocessed_frame_count > 0
+
+    @property
+    def video_ready_time(self):
+        return self._video_ready_time

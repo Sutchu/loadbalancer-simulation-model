@@ -14,3 +14,7 @@ class Worker:
     def assign_video(self, video: Video):
         video.mark_frame_as_processing()
         self._video = video
+
+    @property
+    def is_busy(self):
+        return self._video is not None

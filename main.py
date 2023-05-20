@@ -1,5 +1,6 @@
 from src.loadbalancer import LoadBalancer
 from src.simulation import Simulation
+from src.metrics_logger import MetricsLogger
 
 import json
 
@@ -8,11 +9,13 @@ with open('ExampleTraffic.json') as f:
 
 # Simulation
 simulation = Simulation(traffic_json_arr=traffic_json, load_balancer_class=LoadBalancer)
-queue_sizes, worker_counts = simulation.simulate_traffic()
+simulation.simulate_traffic()
+simulation_metrics: MetricsLogger = simulation.metrics_logger
 
-print("Average VRT: %s" % simulation.average_vrt)
-print("WMU: %s" % simulation.total_worker_usage_time)
-
+print("Average VRT: %s" % simulation_metrics.average_video_ready_time)
+print("WMU: %s" % simulation_metrics.cumulative_worker_usage_time)
+queue_sizes = simulation_metrics.queue_lengths
+worker_counts = simulation_metrics.worker_counts
 # Plot Graphs
 import matplotlib.pyplot as plt
 
