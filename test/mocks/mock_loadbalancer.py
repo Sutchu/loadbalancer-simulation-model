@@ -1,4 +1,4 @@
-from src.loadbalancer import LoadBalancer
+from src.load_balancer import LoadBalancer
 
 class MockLoadBalancer(LoadBalancer):
     """

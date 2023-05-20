@@ -1,4 +1,4 @@
-from src.loadbalancer import LoadBalancer
+from src.load_balancer import LoadBalancer
 from src.simulation import Simulation
 from src.metrics_logger import MetricsLogger
 

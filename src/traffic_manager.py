@@ -7,7 +7,7 @@ from .worker import Worker
 
 class TrafficManager:
     def __init__(self, traffic_json_arr: List[dict]):
-        self.video_ready_time_arr = []
+        self.video_ready_time_arr: List[float] = []
 
         initial_video_timestamp = traffic_json_arr[-1]['properties']['time']
         on_fully_processed = lambda video: self.video_ready_time_arr.append(video.video_ready_time)
@@ -16,29 +16,12 @@ class TrafficManager:
                               initial_video_timestamp,
                               on_fully_processed)
                         for data in traffic_json_arr]
-        self.video_queue = deque()
+        self.video_queue: deque[Video] = deque()
 
     def add_videos_to_queue(self, current_time: int):
         while self.traffic and current_time >= self.traffic[-1].timestamp:
             video = self.traffic.pop()
             self.video_queue.append(video)
-
-    @property
-    def is_traffic_finished(self) -> bool:
-        return not self.traffic
-
-    @property
-    def is_video_queue_finished(self) -> bool:
-        return not self.video_queue
-
-    @property
-    def processing_queue_frame_count(self) -> int:
-        return sum(
-            video._unprocessed_frame_count + video._processing_frame_count for video in self.video_queue)
-
-    @property
-    def average_video_ready_time(self) -> float:
-        return sum(self.video_ready_time_arr) / len(self.video_ready_time_arr)
 
     def assign_video_to_worker(self, worker: Worker) -> bool:
         """
@@ -57,3 +40,21 @@ class TrafficManager:
                 self.video_queue.popleft()
 
         return False
+
+    @property
+    def is_traffic_finished(self) -> bool:
+        return not self.traffic
+
+    @property
+    def is_video_queue_finished(self) -> bool:
+        return not self.video_queue
+
+    @property
+    def processing_queue_frame_count(self) -> int:
+        return sum(
+            video.remaining_frame_count for video in self.video_queue)
+
+    @property
+    def average_video_ready_time(self) -> float:
+        return sum(self.video_ready_time_arr) / len(self.video_ready_time_arr)
+

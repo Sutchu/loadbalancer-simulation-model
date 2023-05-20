@@ -3,12 +3,14 @@ from typing import List
 from .traffic_manager import TrafficManager
 from .metrics_logger import MetricsLogger
 from .worker import Worker
+from .load_balancer import LoadBalancer
 
 
 class Simulation:
     def __init__(self, traffic_json_arr: List[dict], load_balancer_class: type, initial_worker_count=20):
         self.metrics_logger = MetricsLogger()
         self.traffic_manager = TrafficManager(traffic_json_arr)
+        self.load_balancer: LoadBalancer = load_balancer_class(initial_worker_count)
 
         # Initialize the worker pool
         self.worker_indexes = [[] for _ in range(9)]
@@ -16,7 +18,6 @@ class Simulation:
 
         self._current_simulation_time = 0
 
-        self.load_balancer = load_balancer_class(initial_worker_count)
 
     def finish_processing_frames(self, current_worker_group: List[Worker]):
         for worker in current_worker_group:

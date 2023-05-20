@@ -3,17 +3,31 @@ from .worker import Worker
 class LoadBalancer:
 
     def __init__(self, initial_worker_count):
-        self.W = [0.0] * 5
+        self.W_arr = [0.0] * 5
         self.worker_count: int = initial_worker_count
 
         self.number_of_workers_to_remove = 0
         self.number_of_workers_to_add = 0
 
     def balance_worker_load(self, worker_group_size: int, processing_queue_frame_count: int):
-        self.W.append(processing_queue_frame_count / max(1, (self.worker_count - worker_group_size)))
+        """
+        This is the main function that balances the worker load.
+        W is the average number of frames in the processing queue(A) per worker(B).
+        W = A / B.
+        """
+        A = processing_queue_frame_count
+
+        # Number of workers. This does not include idle workers.
+        # I am not sure if I am calculating this number correctly. So if B has to include idle workers,
+        # then comment line bellow and uncomment the line after.
+        B = max(1, (self.worker_count - worker_group_size))
+        # B = self.worker_count
+
+        W = A / B
+        self.W_arr.append(W)
 
         # average of last 5 minutes
-        average_w = sum(self.W[-5:]) / 5
+        average_w = sum(self.W_arr[-5:]) / 5
         if average_w > 12:
             self.number_of_workers_to_add = 5
         elif average_w < 5:
@@ -30,6 +44,12 @@ class LoadBalancer:
         self.number_of_workers_to_add = 0
 
     def remove_workers(self, current_worker_group):
+        """
+        This function removes workers from the current worker group.
+        Given worker group represents workers that are not busy.
+        If number of workers to remove is greater than the number of workers in the group,
+        then the number_of_workers_to_remove is reduced to remove workers on next iteration.
+        """
         for i in range(self.number_of_workers_to_remove):
             try:
                 current_worker_group.pop()

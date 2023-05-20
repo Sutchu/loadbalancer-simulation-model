@@ -33,13 +33,17 @@ class Video:
             self._on_fully_processed(self)
 
     @property
-    def _is_fully_processed(self):
+    def _is_fully_processed(self) -> bool:
         return self._unprocessed_frame_count == 0 and self._processing_frame_count == 0
 
     @property
-    def has_unprocessed_frames(self):
+    def has_unprocessed_frames(self) -> bool:
         return self._unprocessed_frame_count > 0
 
     @property
-    def video_ready_time(self):
+    def video_ready_time(self) -> float:
         return self._video_ready_time
+
+    @property
+    def remaining_frame_count(self):
+        return self._unprocessed_frame_count + self._processing_frame_count
