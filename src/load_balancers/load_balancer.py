@@ -1,4 +1,4 @@
-from .worker import Worker
+from src.worker import Worker
 
 class LoadBalancer:
 
