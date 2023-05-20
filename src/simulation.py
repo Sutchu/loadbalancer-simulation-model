@@ -3,7 +3,7 @@ from typing import List
 from .traffic_manager import TrafficManager
 from .metrics_logger import MetricsLogger
 from .worker_pool import WorkerPool
-from .load_balancer import LoadBalancer
+from src.load_balancers.load_balancer import LoadBalancer
 
 
 class Simulation:
