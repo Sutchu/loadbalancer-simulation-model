@@ -3,6 +3,8 @@ from typing import List
 
 from .video import Video
 from .worker import Worker
+from .metrics_logger import MetricsLogger
+from .time_keeper import SimulationClock
 
 
 class TrafficManager:
@@ -18,10 +20,12 @@ class TrafficManager:
                         for data in traffic_json_arr]
         self.video_queue: deque[Video] = deque()
 
-    def add_videos_to_queue(self, current_time: int):
-        while self.traffic and current_time >= self.traffic[-1].timestamp:
+    def add_videos_to_queue(self):
+        while self.traffic and SimulationClock.current_time_in_secs >= self.traffic[-1].timestamp:
             video = self.traffic.pop()
             self.video_queue.append(video)
+        if SimulationClock.is_minute_boundary:
+            MetricsLogger.update_queue_length(self.processing_queue_frame_count)
 
     def assign_video_to_worker(self, worker: Worker) -> bool:
         """
@@ -57,4 +61,3 @@ class TrafficManager:
     @property
     def average_video_ready_time(self) -> float:
         return sum(self.video_ready_time_arr) / len(self.video_ready_time_arr)
-

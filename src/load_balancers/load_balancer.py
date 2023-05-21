@@ -1,4 +1,5 @@
 from src.worker import Worker
+from src.metrics_logger import MetricsLogger
 
 class LoadBalancer:
 
@@ -41,6 +42,7 @@ class LoadBalancer:
             current_worker_group.append(Worker())
             self.worker_count += 1
 
+        MetricsLogger.increment_worker_usage_time(self.number_of_workers_to_add * 60)
         self.number_of_workers_to_add = 0
 
     def remove_workers(self, current_worker_group):

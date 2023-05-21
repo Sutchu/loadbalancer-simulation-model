@@ -4,7 +4,7 @@ class Video:
     def __init__(self, video_json, initial_video_timestamp, on_fully_processed: Callable):
         self._on_fully_processed = on_fully_processed
         # Timestamp in seconds starting from 0 to simplify calculations
-        self.timestamp = int(video_json['properties']['time'] - initial_video_timestamp) + 1
+        self.timestamp = int(video_json['properties']['time'] - initial_video_timestamp)
 
         self._unprocessed_frame_count = int(video_json['properties']['Duration'] * 15)
         self._processing_frame_count = 0

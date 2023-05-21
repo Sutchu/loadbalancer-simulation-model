@@ -5,8 +5,5 @@ class MockLoadBalancer(LoadBalancer):
     Mock LoadBalancer that does not add or remove workers.
     """
 
-    def add_workers(self, current_worker_group):
-        return
-
-    def remove_workers(self, current_worker_group):
+    def balance_worker_load(self, worker_count, processing_queue_frame_count):
         return

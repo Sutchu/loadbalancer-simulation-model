@@ -3,10 +3,13 @@ from typing import List
 
 class _MetricsLogger:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.queue_lengths: List[int] = []
         self.worker_counts: List[int] = []
-        self.cumulative_worker_usage_time = 0 # WMU (worker machine usage)
-        self.average_video_ready_time = 0 # Average VRT (video ready time)
+        self.cumulative_worker_usage_time = 0  # WMU (worker machine usage)
+        self.average_video_ready_time = 0  # Average VRT (video ready time)
 
     def update_queue_length(self, queue_length: int):
         self.queue_lengths.append(queue_length)
