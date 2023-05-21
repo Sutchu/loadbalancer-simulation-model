@@ -11,6 +11,8 @@ class SimulationGraphPlotter:
         self.worker_counts = self._metrics_logger.worker_counts
 
     def plot(self):
+        print("Plotting...")
+        print("If running from the command line, close the plot window to stop the program.")
         # Generate timepoints
         timepoints = range(len(self.queue_sizes))
 
