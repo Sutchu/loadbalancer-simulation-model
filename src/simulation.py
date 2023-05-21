@@ -12,7 +12,6 @@ class Simulation:
         def get_current_simulation_time():
             return self._current_simulation_time
 
-        self.metrics_logger = MetricsLogger()
         self.traffic_manager = TrafficManager(traffic_json_arr)
         self.load_balancer: LoadBalancer = load_balancer_class(initial_worker_count)
         self.worker_pool = WorkerPool(get_current_simulation_time, initial_worker_count)
@@ -23,17 +22,17 @@ class Simulation:
         while not self.traffic_manager.is_video_queue_finished or not self.traffic_manager.is_traffic_finished:
             self.traffic_manager.add_videos_to_queue(self._current_simulation_time)
 
-            self.worker_pool.update_current_worker_group()
-            current_worker_group = self.worker_pool._current_worker_group
-            self.worker_pool.finish_processing_frames(metrics_logger=self.metrics_logger)
-            self.metrics_logger.increment_worker_usage_time(idle_worker_count)
+            current_worker_group = self.worker_pool.get_and_update_current_worker_group()
+            self.worker_pool.finish_processing_frames()
+            MetricsLogger.increment_worker_usage_time(idle_worker_count)
 
             if self._current_simulation_time % 60 == 0:
+                MetricsLogger.increment_worker_usage_time(self.load_balancer.number_of_workers_to_add * 60)
                 self.load_balancer.add_workers(current_worker_group)
 
                 processing_queue_frame_count = self.traffic_manager.processing_queue_frame_count
-                self.metrics_logger.update_queue_length(processing_queue_frame_count)
-                self.metrics_logger.update_worker_counts(self.load_balancer.worker_count)
+                MetricsLogger.update_queue_length(processing_queue_frame_count)
+                MetricsLogger.update_worker_counts(self.load_balancer.worker_count)
 
                 self.load_balancer.balance_worker_load(len(current_worker_group), processing_queue_frame_count)
 
@@ -43,4 +42,4 @@ class Simulation:
 
             self._current_simulation_time += 1
 
-        self.metrics_logger.update_average_vrt(self.traffic_manager.average_video_ready_time)
+        MetricsLogger.update_average_vrt(self.traffic_manager.average_video_ready_time)

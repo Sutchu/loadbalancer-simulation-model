@@ -36,12 +36,13 @@ class WorkerPool:
 
         return len(idle_workers)
 
-    def finish_processing_frames(self, metrics_logger: MetricsLogger):
+    def finish_processing_frames(self):
         for worker in self._current_worker_group:
             if worker.is_busy:
-                metrics_logger.increment_worker_usage_time(8)
+                MetricsLogger.increment_worker_usage_time(8)
 
             worker.finish_processing_frame(self._get_current_simulation_time())
 
-    def update_current_worker_group(self):
+    def get_and_update_current_worker_group(self):
         self._current_worker_group = self.worker_indexes[self._get_current_simulation_time() % 9]
+        return self._current_worker_group

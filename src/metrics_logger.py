@@ -1,7 +1,7 @@
 from typing import List
 
 
-class MetricsLogger:
+class _MetricsLogger:
     def __init__(self):
         self.queue_lengths: List[int] = []
         self.worker_counts: List[int] = []
@@ -19,3 +19,7 @@ class MetricsLogger:
 
     def increment_worker_usage_time(self, increment_by: int):
         self.cumulative_worker_usage_time += increment_by
+
+
+# Singleton
+MetricsLogger = _MetricsLogger()

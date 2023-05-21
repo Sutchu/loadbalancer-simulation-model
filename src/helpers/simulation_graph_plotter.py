@@ -4,11 +4,9 @@ from ..metrics_logger import MetricsLogger
 
 
 class SimulationGraphPlotter:
-    def __init__(self, metrics_logger: MetricsLogger):
-        self._metrics_logger = metrics_logger
-
-        self.queue_sizes = self._metrics_logger.queue_lengths
-        self.worker_counts = self._metrics_logger.worker_counts
+    def __init__(self):
+        self.queue_sizes = MetricsLogger.queue_lengths
+        self.worker_counts = MetricsLogger.worker_counts
 
     def plot(self):
         print("Plotting...")
