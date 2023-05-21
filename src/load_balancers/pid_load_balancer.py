@@ -4,19 +4,24 @@ class PIDLoadBalancer(LoadBalancer):
 
     def __init__(self, initial_worker_count: int):
         super().__init__(initial_worker_count)
-        self.p = 0.2
-        self.i = 0
-        self.d = 0
+        self.Kp = 1
+        self.Kd = 0.1
+
+        self.prev_cost = 0
 
     def balance_worker_load(self, worker_group_size: int, processing_queue_frame_count: int):
-        cost = processing_queue_frame_count / self.worker_count
+        A = processing_queue_frame_count
+        B = self.worker_count
+        cost = (A/(B*4)-1)*10 # - max(0, B - A)
 
-        self.i += cost
-        self.d = cost - self.p
-        self.p = cost
+        P = self.Kp * cost
+        D = self.Kd * (cost - self.prev_cost)
+        self.prev_cost = cost
 
-        worker_count = int(self.p + self.i + self.d)
+        worker_count = int(P + D)
         if worker_count < 0:
-            self.number_of_workers_to_remove = min(worker_count, max(self.worker_count - 20, 0))
+            self.number_of_workers_to_remove = abs(worker_count)
+            if self.worker_count - self.number_of_workers_to_remove < 50:
+                self.number_of_workers_to_remove = self.worker_count - 50
         else:
             self.number_of_workers_to_add = worker_count
