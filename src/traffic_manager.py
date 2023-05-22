@@ -1,57 +1,63 @@
 from collections import deque
-from typing import List
+from typing import List, Callable
 
 from .video import Video
 from .worker import Worker
-from .metrics_logger import MetricsLogger
-from .time_keeper import SimulationClock
-
+from .simulation_events.video_added_from_traffic_event import VideoAddedFromTrafficEvent
+from .simulation_events.worker_finished_processing_event import WorkerFinishedProcessingEvent
+from .simulation_events.add_workers_event import AddWorkersEvent
+from .simulation_events.remove_workers_event import RemoveWorkersEvent
 
 class TrafficManager:
-    def __init__(self, traffic_json_arr: List[dict]):
+    def __init__(self, traffic_json_arr: List[dict], add_event_to_queue_callback: Callable, initial_worker_count: int = 20):
         self.video_ready_time_arr: List[float] = []
 
         initial_video_timestamp = traffic_json_arr[-1]['properties']['time']
-        on_fully_processed = lambda video: self.video_ready_time_arr.append(video.video_ready_time)
 
-        self.traffic = [Video(data,
-                              initial_video_timestamp,
-                              on_fully_processed)
-                        for data in traffic_json_arr]
+        on_fully_processed = lambda video: self.video_ready_time_arr.append(video.video_ready_time)
+        traffic = [Video(data,
+                      initial_video_timestamp,
+                      on_fully_processed)
+                for data in traffic_json_arr]
         self.video_queue: deque[Video] = deque()
 
-    def add_videos_to_queue(self):
-        while self.traffic and SimulationClock.current_time_in_secs >= self.traffic[-1].timestamp:
-            video = self.traffic.pop()
-            self.video_queue.append(video)
-        if SimulationClock.is_minute_boundary:
-            MetricsLogger.update_queue_length(self.processing_queue_frame_count)
+        self._add_event_to_queue_callback = add_event_to_queue_callback
+        self._create_events_from_traffic(traffic)
 
-    def assign_video_to_worker(self, worker: Worker) -> bool:
-        """
-        Assigns the first unprocessed video to the worker
-        If first video is fully processed, removes it from the queue and tries again
+        self.available_workers: List[Worker] = [Worker(self._add_worker_to_available_workers, 0) for _ in range(initial_worker_count)]
 
-        :param worker: Worker instance
-        :return: bool, True if video was assigned, False otherwise
-        """
-        while self.video_queue:
-            video: Video = self.video_queue[0]  # Peek at the first video in the queue
+    def _add_worker_to_available_workers(self, worker: Worker):
+        self.available_workers.append(worker)
+
+    def _create_events_from_traffic(self, traffic):
+        for video in traffic:
+            event = VideoAddedFromTrafficEvent(timestamp=video.timestamp,
+                                               video=video,
+                                               video_queue=self.video_queue,
+                                               assign_video_to_available_workers_callback=self._assign_frame_to_available_workers)
+
+            self._add_event_to_queue_callback(event)
+
+    def _assign_frame_to_available_workers(self, current_timestamp: int):
+        while self.video_queue and self.available_workers:
+            video: Video = self.video_queue[0]
             if video.has_unprocessed_frames:
+                worker = self.available_workers.pop()
                 worker.assign_video(video)
-                return True
+
+                event = WorkerFinishedProcessingEvent(timestamp=current_timestamp + 8,
+                                                      worker=worker,
+                                                      assign_video_to_available_workers_callback=self._assign_frame_to_available_workers)
+                self._add_event_to_queue_callback(event)
             else:
                 self.video_queue.popleft()
 
-        return False
+    def create_add_workers_event(self, current_timestamp: int, worker_count: int):
+        pass
 
-    @property
-    def is_traffic_finished(self) -> bool:
-        return not self.traffic
 
-    @property
-    def is_video_queue_finished(self) -> bool:
-        return not self.video_queue
+    def create_remove_workers_event(self, current_timestamp: int, worker_count: int, decrease_worker_count_callback: Callable):
+        pass
 
     @property
     def processing_queue_frame_count(self) -> int:

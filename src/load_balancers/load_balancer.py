@@ -1,16 +1,16 @@
 from src.worker import Worker
 from src.metrics_logger import MetricsLogger
 
+from src.traffic_manager import TrafficManager
 class LoadBalancer:
 
-    def __init__(self, initial_worker_count):
+    def __init__(self, initial_worker_count: int,
+                 traffic_manager: TrafficManager):
         self.W_arr = [0.0] * 5
-        self.worker_count: int = initial_worker_count
+        self._worker_count: int = initial_worker_count
+        self._traffic_manager: TrafficManager = traffic_manager
 
-        self.number_of_workers_to_remove = 0
-        self.number_of_workers_to_add = 0
-
-    def balance_worker_load(self, worker_group_size: int, processing_queue_frame_count: int):
+    def balance_worker_load(self, available_worker_count: int, processing_queue_frame_count: int, current_timestamp: int):
         """
         This is the main function that balances the worker load.
         W is the average number of frames in the processing queue(A) per worker(B).
@@ -21,7 +21,7 @@ class LoadBalancer:
         # Number of workers. This does not include idle workers.
         # I am not sure if I am calculating this number correctly. So if B has to include idle workers,
         # then comment line bellow and uncomment the line after.
-        B = max(1, (self.worker_count - worker_group_size))
+        B = max(1, (self._worker_count - available_worker_count))
         # B = self.worker_count
 
         W = A / B
@@ -30,34 +30,16 @@ class LoadBalancer:
         # average of last 5 minutes
         average_w = sum(self.W_arr[-5:]) / 5
         if average_w > 12:
-            self.number_of_workers_to_add = 5
+            self.add_workers(5, current_timestamp)
         elif average_w < 5:
-            self.number_of_workers_to_remove = min(4, max(self.worker_count - 20, 0))
+            self.remove_workers(min(4, max(self._worker_count - 20, 0)))
 
-    def add_workers(self, current_worker_group):
-        """
-        This function adds new workers to the current worker group.
-        """
-        for _ in range(self.number_of_workers_to_add):
-            current_worker_group.append(Worker())
-            self.worker_count += 1
+    def add_workers(self, count: int, current_timestamp: int):
+        self._traffic_manager.create_add_workers_event(current_timestamp, count)
+        self._worker_count += 1
 
-        MetricsLogger.increment_worker_usage_time(self.number_of_workers_to_add * 60)
-        self.number_of_workers_to_add = 0
+    def remove_workers(self, count: int, current_timestamp: int):
+        def decrease_worker_count():
+            self._worker_count -= 1
 
-    def remove_workers(self, current_worker_group):
-        """
-        This function removes workers from the current worker group.
-        Given worker group represents workers that are not busy.
-        If number of workers to remove is greater than the number of workers in the group,
-        then the number_of_workers_to_remove is reduced to remove workers on next iteration.
-        """
-        for i in range(self.number_of_workers_to_remove):
-            try:
-                current_worker_group.pop()
-                self.worker_count -= 1
-            except IndexError:
-                self.number_of_workers_to_remove = self.number_of_workers_to_remove - i
-                break
-
-            self.number_of_workers_to_remove = 0
+        self._traffic_manager.create_remove_workers_event(current_timestamp, count, decrease_worker_count)
