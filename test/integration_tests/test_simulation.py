@@ -1,5 +1,5 @@
 from unittest import TestCase
-from test.mocks.mock_loadbalancer import MockLoadBalancer
+from src.load_balancers.base_load_balancer import BaseLoadBalancer
 from src.simulation import Simulation
 from src.metrics_logger import MetricsLogger
 from src.time_keeper import SimulationClock
@@ -25,7 +25,7 @@ class TestSimulation(TestCase):
         The extra second is because first frame starts being processed at first second.
         """
         simulation = Simulation(traffic_json_arr=self.traffic,
-                                load_balancer_class=MockLoadBalancer,
+                                load_balancer_class=BaseLoadBalancer,
                                 initial_worker_count=1)
 
         simulation.simulate_traffic()
@@ -37,7 +37,7 @@ class TestSimulation(TestCase):
 
     def test_1_video_2_workers(self):
         simulation = Simulation(traffic_json_arr=self.traffic,
-                                load_balancer_class=MockLoadBalancer,
+                                load_balancer_class=BaseLoadBalancer,
                                 initial_worker_count=2)
 
         simulation.simulate_traffic()
@@ -52,7 +52,7 @@ class TestSimulation(TestCase):
         self.traffic.insert(0, video_2)
 
         simulation = Simulation(traffic_json_arr=self.traffic,
-                                load_balancer_class=MockLoadBalancer,
+                                load_balancer_class=BaseLoadBalancer,
                                 initial_worker_count=1)
 
         simulation.simulate_traffic()
@@ -69,7 +69,7 @@ class TestSimulation(TestCase):
         self.traffic.insert(0, video_2)
 
         simulation = Simulation(traffic_json_arr=self.traffic,
-                                load_balancer_class=MockLoadBalancer,
+                                load_balancer_class=BaseLoadBalancer,
                                 initial_worker_count=2)
 
         simulation.simulate_traffic()
